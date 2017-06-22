@@ -3,7 +3,6 @@ package plan
 
 import (
 	"net/url"
-	"strconv"
 
 	stripe "github.com/stripe/stripe-go"
 )
@@ -29,23 +28,7 @@ func New(params *stripe.PlanParams) (*stripe.Plan, error) {
 
 func (c Client) New(params *stripe.PlanParams) (*stripe.Plan, error) {
 	body := &stripe.RequestValues{}
-	body.Add("id", params.ID)
-	body.Add("name", params.Name)
-	body.Add("amount", strconv.FormatUint(params.Amount, 10))
-	body.Add("currency", string(params.Currency))
-	body.Add("interval", string(params.Interval))
-
-	if params.IntervalCount > 0 {
-		body.Add("interval_count", strconv.FormatUint(params.IntervalCount, 10))
-	}
-
-	if params.TrialPeriod > 0 {
-		body.Add("trial_period_days", strconv.FormatUint(params.TrialPeriod, 10))
-	}
-
-	if len(params.Statement) > 0 {
-		body.Add("statement_descriptor", params.Statement)
-	}
+	params.Params.AppendTo(body)
 	params.AppendTo(body)
 
 	plan := &stripe.Plan{}
@@ -67,6 +50,7 @@ func (c Client) Get(id string, params *stripe.PlanParams) (*stripe.Plan, error) 
 	if params != nil {
 		commonParams = &params.Params
 		body = &stripe.RequestValues{}
+		params.Params.AppendTo(body)
 		params.AppendTo(body)
 	}
 
@@ -89,19 +73,7 @@ func (c Client) Update(id string, params *stripe.PlanParams) (*stripe.Plan, erro
 	if params != nil {
 		commonParams = &params.Params
 		body = &stripe.RequestValues{}
-
-		if len(params.Name) > 0 {
-			body.Add("name", params.Name)
-		}
-
-		if len(params.Statement) > 0 {
-			body.Add("statement_descriptor", params.Statement)
-		}
-
-		if params.TrialPeriod > 0 {
-			body.Add("trial_period_days", strconv.FormatUint(params.TrialPeriod, 10))
-		}
-
+		params.Params.AppendTo(body)
 		params.AppendTo(body)
 	}
 
@@ -120,7 +92,6 @@ func Del(id string) (*stripe.Plan, error) {
 func (c Client) Del(id string) (*stripe.Plan, error) {
 	plan := &stripe.Plan{}
 	err := c.B.Call("DELETE", "/plans/"+url.QueryEscape(id), c.Key, nil, nil, plan)
-
 	return plan, err
 }
 
@@ -137,7 +108,6 @@ func (c Client) List(params *stripe.PlanListParams) *Iter {
 
 	if params != nil {
 		body = &stripe.RequestValues{}
-
 		params.AppendTo(body)
 		lp = &params.ListParams
 		p = params.ToParams()
